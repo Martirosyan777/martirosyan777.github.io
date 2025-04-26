@@ -1,0 +1,660 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="hy">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Official website of Gevorg Martirosyan, an Armenian singer sharing the beauty of Armenian culture through music.">
+    <meta property="og:title" content="Gevorg Martirosyan - Singer">
+    <meta property="og:description" content="Discover the music and story of Gevorg Martirosyan, an Armenian artist.">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1517230878791-4d28214057c2?auto=format&fit=crop&w=800&q=80">
+    <title data-lang="title">Գևորգ Մարտիրոսյան - Երգիչ</title>
+    <link rel="icon" type="image/png" href="https://flagcdn.com/16x12/am.png">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Armenian:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous">
+    <style>
+        /* CSS Variables */
+        :root {
+            --bg-color: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --text-color: #333;
+            --section-bg: #ffffff;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --navbar-bg: rgba(0, 0, 0, 0.7);
+            --footer-bg: #2c3e50;
+            --footer-text: white;
+            --playlist-border: #eee;
+            --progress-bg: #ddd;
+        }
+        body.dark-mode {
+            --bg-color: linear-gradient(135deg, #2c3e50 0%, #4b6584 100%);
+            --text-color: #e0e0e0;
+            --section-bg: #34495e;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --navbar-bg: rgba(0, 0, 0, 0.9);
+            --footer-bg: #1a252f;
+            --footer-text: #e0e0e0;
+            --playlist-border: #4b6584;
+            --progress-bg: #4b6584;
+        }
+
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Noto Sans Armenian', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+            overflow-x: hidden;
+        }
+        body[lang="en"] {
+            font-family: 'Montserrat', sans-serif;
+        }
+        a {
+            text-decoration: none;
+        }
+
+        /* Layout */
+        .hero-section {
+            background: url('https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1920&q=80') no-repeat center center;
+            background-size: cover;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        .navbar {
+            background-color: var(--navbar-bg);
+            transition: background-color 0.3s ease;
+        }
+        .bio-section, .music-section, .contact-section {
+            padding: clamp(3rem, 8vw, 5rem) 0;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        footer {
+            background-color: var(--footer-bg);
+            color: var(--footer-text);
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        /* Components */
+        .hero-section h1 {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 700;
+        }
+        .hero-section p {
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+        }
+        .navbar-brand, .nav-link {
+            color: white !important;
+            font-size: clamp(1rem, 2vw, 1.1rem);
+            transition: color 0.2s ease;
+        }
+        .nav-link:hover, .nav-link:focus {
+            color: #f0c14b !important;
+        }
+        .section-title {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            color: var(--text-color);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .btn-custom {
+            background-color: #f0c14b;
+            border: none;
+            color: #2c3e50;
+            font-weight: 700;
+            padding: clamp(0.6rem, 1.5vw, 0.8rem) clamp(1.2rem, 3vw, 1.6rem);
+            border-radius: 5px;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        .btn-custom:hover {
+            background-color: #e0a800;
+            transform: translateY(-2px);
+        }
+        .btn-custom:active {
+            transform: translateY(0);
+        }
+        .social-icons a {
+            color: var(--text-color);
+            font-size: clamp(1.8rem, 4vw, 2.2rem);
+            transition: color 0.2s ease;
+        }
+        .social-icons a:hover {
+            color: #f0c14b;
+        }
+        .theme-toggle {
+            color: white;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-left: 1rem;
+            transition: color 0.2s ease;
+        }
+        .theme-toggle:hover, .theme-toggle:focus {
+            color: #f0c14b;
+        }
+        .lang-toggle {
+            margin-left: 1rem;
+        }
+        .lang-toggle .dropdown-menu {
+            background: #2c3e50;
+            border: none;
+        }
+        .lang-toggle .dropdown-item {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: inherit;
+            padding: 0.5rem 1rem;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .lang-toggle .dropdown-item:hover {
+            background: #f0c14b;
+            color: #2c3e50;
+        }
+        .lang-toggle img {
+            width: 24px;
+            height: 16px;
+        }
+
+        /* Music Player */
+        .music-player {
+            background: var(--section-bg);
+            border-radius: 15px;
+            padding: clamp(1.5rem, 4vw, 2rem);
+            box-shadow: 0 10px 30px var(--shadow-color);
+            max-width: 600px;
+            margin: 0 auto;
+            font-family: inherit;
+        }
+        .player-controls {
+            display: flex;
+            justify-content: center;
+            gap: clamp(0.8rem, 2vw, 1rem);
+            margin-bottom: 1rem;
+        }
+        .player-controls button {
+            background: #f0c14b;
+            border: none;
+            border-radius: 50%;
+            width: clamp(45px, 10vw, 50px);
+            height: clamp(45px, 10vw, 50px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2c3e50;
+            font-size: clamp(1.3rem, 3vw, 1.5rem);
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        .player-controls button:hover {
+            background: #e0a800;
+            transform: scale(1.05);
+        }
+        .playlist {
+            list-style: none;
+            padding: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .playlist li {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--playlist-border);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-color);
+            font-family: inherit;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .playlist li:hover, .playlist li.active {
+            background: #f0c14b;
+            color: #2c3e50;
+        }
+        .progress-bar {
+            height: 5px;
+            background: var(--progress-bg);
+            border-radius: 5px;
+            margin: 1rem 0;
+            position: relative;
+        }
+        .progress {
+            height: 100%;
+            background: #f0c14b;
+            width: 0;
+            border-radius: 5px;
+            transition: width 0.1s linear;
+        }
+        .time-display {
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+            color: var(--text-color);
+            display: flex;
+            justify-content: space-between;
+            font-family: inherit;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .hero-section h1 {
+                font-size: clamp(2rem, 5vw, 3rem);
+            }
+            .hero-section p {
+                font-size: clamp(1rem, 2.5vw, 1.3rem);
+            }
+            .section-title {
+                font-size: clamp(1.6rem, 3.5vw, 2rem);
+            }
+            .bio-section img {
+                margin-bottom: 1.5rem;
+            }
+        }
+        @media (max-width: 768px) {
+            .hero-section h1 {
+                font-size: clamp(1.8rem, 4.5vw, 2.5rem);
+            }
+            .hero-section p {
+                font-size: clamp(0.9rem, 2vw, 1.2rem);
+            }
+            .music-player {
+                padding: clamp(1rem, 3vw, 1.5rem);
+            }
+            .playlist {
+                max-height: 200px;
+            }
+            .btn-custom {
+                padding: clamp(0.5rem, 1.2vw, 0.6rem) clamp(1rem, 2.5vw, 1.2rem);
+                font-size: clamp(0.8rem, 2vw, 0.9rem);
+            }
+            .social-icons a {
+                font-size: clamp(1.6rem, 3.5vw, 2rem);
+            }
+            .nav-link {
+                padding: 0.75rem;
+            }
+            .theme-toggle, .lang-toggle {
+                margin-left: 0.5rem;
+            }
+        }
+        @media (max-width: 576px) {
+            .hero-section h1 {
+                font-size: clamp(1.5rem, 4vw, 2rem);
+            }
+            .hero-section p {
+                font-size: clamp(0.8rem, 1.8vw, 1rem);
+            }
+            .music-player {
+                padding: 1rem;
+            }
+            .player-controls {
+                gap: 0.75rem;
+            }
+            .player-controls button {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#" data-lang="nav-brand">Գևորգ Մարտիրոսյան</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="#home" data-lang="nav-home">Գլխավոր</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#bio" data-lang="nav-bio">Իմ մասին</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#music" data-lang="nav-music">Երաժշտություն</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#contact" data-lang="nav-contact">Կապ</a></li>
+                </ul>
+                <div class="d-flex align-items-center">
+                    <div class="lang-toggle dropdown">
+                        <button class="btn btn-link text-white" type="button" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Language selector">
+                            <img src="https://flagcdn.com/24x18/am.png" alt="Armenian Flag" id="current-lang-flag">
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="languageDropdown">
+                            <li><a class="dropdown-item" href="#" data-lang-value="hy"><img src="https://flagcdn.com/24x18/am.png" alt="Armenian Flag"> Հայերեն</a></li>
+                            <li><a class="dropdown-item" href="#" data-lang-value="en"><img src="https://flagcdn.com/24x18/us.png" alt="USA Flag"> English</a></li>
+                        </ul>
+                    </div>
+                    <button class="theme-toggle" id="theme-toggle" title="Toggle Theme" aria-label="Toggle theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero-section">
+        <div>
+            <h1 data-lang="hero-title">Գևորգ Մարտիրոսյան</h1>
+            <p data-lang="hero-subtitle">Հայկական երաժշտության ձայնը</p>
+            <a href="#music" class="btn btn-custom btn-lg mt-3" data-lang="hero-button">Լսել Երաժշտություն</a>
+        </div>
+    </section>
+
+    <!-- Bio Section -->
+    <section id="bio" class="bio-section">
+        <div class="container">
+            <h2 class="section-title" data-lang="bio-title">Իմ մասին</h2>
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <img src="https://images.unsplash.com/photo-1517230878791-4d28214057c2?auto=format&fit=crop&w=800&q=80" class="img-fluid rounded" alt="Գևորգ Մարտիրոսյան" loading="lazy">
+                </div>
+                <div class="col-md-6">
+                    <p data-lang="bio-text">Գևորգ Մարտիրոսյանը ծնվել է 1995 թվականի մարտի 7-ին։ Հինգ տարեկանից հաճախել է «Մանկունք» եկեղեցու երգչախումբը՝ մաեստրո Շոթա Վարդանյանի ղեկավարությամբ և Սուրբ Սարգիս եկեղեցում կատարել Մակար Եկմալյանի «Պատարագ»-ը։ Երգչախմբի լուծարումից հետո ընդունվել է Երևանի Ալեքսանդր Աճեմյանի անվան երաժշտական դպրոց՝ դաշնամուրի բաժին։
+2012 թվականին ընդունվել է Երևանի Մշակույթի համալսարան՝ մաեստրո Էդուարդ Բեգլարյանի դասարան։ Ուսման ընթացքում մասնակցել է բազմաթիվ փառատոների և արժանացել պատվավոր մրցանակների։ 2015 թվականին թողարկել է իր առաջին երգը՝ գործիքավորելով Սայաթ-Նովայի «Աշխարհումս ահ չեմ կաշի» ստեղծագործությունը (գործիքավորում՝ Գուրո Գասպարյան)։
+Ներկայումս Գևորգը համագործակցում է գործիքավորող Գևորգ Հովհաննիսյանի հետ և դասավանդում է որպես վոկալի ուսուցիչ Ալեքսանդր Աճեմյանի անվան երաժշտական դպրոցում։ Ազատ ժամանակ սիրում է դիտել ֆիլմեր և ֆուտբոլային հանդիպումներ։ Վաղ տարիքից զբաղվել է նաև մեդիա ոլորտով և լրագրությամբ։</p>
+                    <a href="#contact" class="btn btn-custom mt-3" data-lang="bio-button">Կապվել ինձ հետ</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Music Section -->
+    <section id="music" class="music-section">
+        <div class="container">
+            <h2 class="section-title" data-lang="music-title">Իմ Երաժշտությունը</h2>
+            <div class="music-player">
+                <audio id="audio-player" src=""></audio>
+                <div class="player-controls">
+                    <button id="prev-btn" title="Previous" aria-label="Previous track"><i class="fas fa-backward"></i></button>
+                    <button id="play-pause-btn" title="Play/Pause" aria-label="Play or pause track"><i class="fas fa-play"></i></button>
+                    <button id="next-btn" title="Next" aria-label="Next track"><i class="fas fa-forward"></i></button>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress" id="progress"></div>
+                </div>
+                <div class="time-display">
+                    <span id="current-time">0:00</span>
+                    <span id="duration">0:00</span>
+                </div>
+                <ul class="playlist" id="playlist">
+                    <li data-src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" data-lang="track-1">Հայաստանի Գույները</li>
+                    <li data-src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" data-lang="track-2">Սիրո Երգեր</li>
+                    <li data-src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" data-lang="track-3">Հոգու Լույս</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact-section">
+        <div class="container">
+            <h2 class="section-title" data-lang="contact-title">Կապվեք Ինջ Հետ</h2>
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="text-center">
+                        <p data-lang="contact-text">Հետաքրքրվա՞ծ եք համագործակցությամբ կամ պարզապես ցանկանում եք կապվել: Գրեք ինջ:</p>
+                        <a href="mailto:gevorg@example.com" class="btn btn-custom" data-lang="contact-button">Գրել</a>
+                        <div class="social-icons mt-3">
+                            <a href="https://facebook.com/gevorgmartirosyan" target="_blank" title="Facebook" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                            <a href="https://instagram.com/gevorgmartirosyan" target="_blank" title="Instagram" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                            <a href="https://x.com/gevorgmartirosyan" target="_blank" title="X" aria-label="X"><i class="fab fa-x-twitter"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p data-lang="footer-text">© 2025 Գևորգ Մարտիրոսյան. Բոլոր իրավունքները պաշտպանված են:</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous" defer></script>
+    <script>
+        // Language Translations
+        const translations = {
+            hy: {
+                title: "Գևորգ Մարտիրոսյան - Երգիչ",
+                "nav-brand": "Գևորգ Մարտիրոսյան",
+                "nav-home": "Գլխավոր",
+                "nav-bio": "Իմ մասին",
+                "nav-music": "Երաժշտություն",
+                "nav-contact": "Կապ",
+                "hero-title": "Գևորգ Մարտիրոսյան",
+                "hero-subtitle": "Հայկական երաժշտության ձայնը",
+                "hero-button": "Լսել Երաժշտություն",
+                "bio-title": "Իմ մասին",
+                "bio-text": "Գևորգ Մարտիրոսյանը ծնվել է 1995 թվականի մարտի 7-ին։ Հինգ տարեկանից հաճախել է «Մանկունք» եկեղեցու երգչախումբը՝ մաեստրո Շոթա Վարդանյանի ղեկավարությամբ և Սուրբ Սարգիս եկեղեցում կատարել Մակար Եկմալյանի «Պատարագ»-ը։ Երգչախմբի լուծարումից հետո ընդունվել է Երևանի Ալեքսանդր Աճեմյանի անվան երաժշտական դպրոց՝ դաշնամուրի բաժին։2012 թվականին ընդունվել է Երևանի Մշակույթի համալսարան՝ մաեստրո Էդուարդ Բեգլարյանի դասարան։ Ուսման ընթացքում մասնակցել է բազմաթիվ փառատոների և արժանացել պատվավոր մրցանակների։ 2015 թվականին թողարկել է իր առաջին երգը՝ գործիքավորելով Սայաթ-Նովայի «Աշխարհումս ահ չեմ կաշի» ստեղծագործությունը (գործիքավորում՝ Գուրո Գասպարյան)։ Ներկայումս Գևորգը համագործակցում է գործիքավորող Գևորգ Հովհաննիսյանի հետ և դասավանդում է որպես վոկալի ուսուցիչ Ալեքսանդր Աճեմյանի անվան երաժշտական դպրոցում։ Ազատ ժամանակ սիրում է դիտել ֆիլմեր և ֆուտբոլային հանդիպումներ։ Վաղ տարիքից զբաղվել է նաև մեդիա ոլորտով և լրագրությամբ։",
+                "bio-button": "Կապվել ինջ հետ",
+                "music-title": "Իմ Երաժշտությունը",
+                "track-1": "Հայաստանի Գույները",
+                "track-2": "Սիրո Երգեր",
+                "track-3": "Հոգու Լույս",
+                "contact-title": "Կապվեք Ինջ Հետ",
+                "contact-text": "Հետաքրքրվա՞ծ եք համագործակցությամբ կամ պարզապես ցանկանում եք կապվել: Գրեք ինջ:",
+                "contact-button": "Գրել",
+                "footer-text": "© 2025 Գևորգ Մարտիրոսյան. Բոլոր իրավունքները պաշտպանված են:"
+            },
+            en: {
+                title: "Gevorg Martirosyan - Singer",
+                "nav-brand": "Gevorg Martirosyan",
+                "nav-home": "Home",
+                "nav-bio": "About Me",
+                "nav-music": "Music",
+                "nav-contact": "Contact",
+                "hero-title": "Gevorg Martirosyan",
+                "hero-subtitle": "The Voice of Armenian Music",
+                "hero-button": "Listen to Music",
+                "bio-title": "About Me",
+                "bio-text": "Gevorg Martirosyan was born 1995, March 7. From the age of 5 he started attending «Mankunk» Church choir, conducted by maestro Shota Vardanyan, and performed Makar Ekmalyan's «Patarag» at St. Sargis Church. After the dissolution of the choir, he entered the piano department of the Alexander Achemyan Music School in Yerevan. In 2012 he entered Yerevan University of Culture. He was taught in the class of maestro Edward Beglaryan. During his studies, he participated in a number of festivals, getting honorary positions. Gevorg released his first song in 2015, instrumenting Sayat-Nova's song «Ashkharhums akh Chim Kashi» (arrangement by Guro Gasparyan). Now Gevorg works with arranger Gevorg Hovhannisyan, as well he teaches at the Alexander Achemyan Music School in Yerevan as a vocal teacher. In his free time, he loves watching films, football matches. In his early life he dealt with media, journalism.",
+                "bio-button": "Contact Me",
+                "music-title": "My Music",
+                "track-1": "Colors of Armenia",
+                "track-2": "Songs of Love",
+                "track-3": "Light of the Soul",
+                "contact-title": "Get in Touch",
+                "contact-text": "Interested in collaboration or just want to connect? Write to me:",
+                "contact-button": "Write",
+                "footer-text": "© 2025 Gevorg Martirosyan. All rights reserved."
+            }
+        };
+
+        // Language Management
+        function changeLanguage(lang) {
+            localStorage.setItem('language', lang);
+            document.querySelectorAll('[data-lang]').forEach(element => {
+                const key = element.getAttribute('data-lang');
+                element.textContent = translations[lang][key];
+                if (element.tagName === 'TITLE') {
+                    document.title = translations[lang][key];
+                }
+            });
+            document.documentElement.lang = lang;
+            document.getElementById('current-lang-flag').src = lang === 'hy' ? 'https://flagcdn.com/24x18/am.png' : 'https://flagcdn.com/24x18/us.png';
+            document.getElementById('current-lang-flag').alt = lang === 'hy' ? 'Armenian Flag' : 'USA Flag';
+        }
+
+        // Initialize Language
+        const savedLang = localStorage.getItem('language') || 'hy';
+        changeLanguage(savedLang);
+        document.querySelectorAll('.lang-toggle .dropdown-item').forEach(item => {
+            item.addEventListener('click', e => {
+                e.preventDefault();
+                changeLanguage(item.getAttribute('data-lang-value'));
+            });
+        });
+
+        // Dark Mode
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            body.classList.add('dark-mode');
+            themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        }
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        });
+
+        // Smooth Scrolling
+        document.querySelectorAll('.nav-link').forEach(anchor => {
+            anchor.addEventListener('click', e => {
+                e.preventDefault();
+                const targetId = anchor.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                window.scrollTo({
+                    top: targetElement.offsetTop - 70,
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Music Player
+        const audioPlayer = document.getElementById('audio-player');
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const progress = document.getElementById('progress');
+        const currentTimeEl = document.getElementById('current-time');
+        const durationEl = document.getElementById('duration');
+        const playlist = document.getElementById('playlist').children;
+        let currentTrackIndex = 0;
+        let isPlaying = false;
+
+        function loadTrack(index) {
+            const track = playlist[index];
+            audioPlayer.src = track.getAttribute('data-src');
+            document.querySelectorAll('.playlist li').forEach(li => li.classList.remove('active'));
+            track.classList.add('active');
+            audioPlayer.load();
+            updateDuration();
+        }
+
+        function togglePlayPause() {
+            if (isPlaying) {
+                audioPlayer.pause();
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+            } else {
+                audioPlayer.play();
+                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            }
+            isPlaying = !isPlaying;
+        }
+
+        function playNext() {
+            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+            loadTrack(currentTrackIndex);
+            if (isPlaying) audioPlayer.play();
+        }
+
+        function playPrev() {
+            currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
+            loadTrack(currentTrackIndex);
+            if (isPlaying) audioPlayer.play();
+        }
+
+        function updateProgress() {
+            const currentTime = audioPlayer.currentTime;
+            const duration = audioPlayer.duration;
+            progress.style.width = `${(currentTime / duration) * 100}%`;
+            currentTimeEl.textContent = formatTime(currentTime);
+            durationEl.textContent = formatTime(duration);
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            seconds = Math.floor(seconds % 60);
+            return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        function updateDuration() {
+            audioPlayer.addEventListener('loadedmetadata', () => {
+                durationEl.textContent = formatTime(audioPlayer.duration);
+            }, { once: true });
+        }
+
+        Array.from(playlist).forEach((track, index) => {
+            track.addEventListener('click', () => {
+                currentTrackIndex = index;
+                loadTrack(index);
+                audioPlayer.play();
+                isPlaying = true;
+                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            });
+        });
+
+        playPauseBtn.addEventListener('click', togglePlayPause);
+        nextBtn.addEventListener('click', playNext);
+        prevBtn.addEventListener('click', playPrev);
+        audioPlayer.addEventListener('timeupdate', updateProgress);
+        audioPlayer.addEventListener('ended', playNext);
+        loadTrack(currentTrackIndex);
+    </script>
+</body>
+</html>
